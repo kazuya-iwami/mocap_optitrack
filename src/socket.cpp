@@ -17,16 +17,19 @@
 
 #include <ros/ros.h>
 
-UdpMulticastSocket::UdpMulticastSocket( const int local_port, const std::string multicast_ip ) 
+UdpMulticastSocket::UdpMulticastSocket( const int local_port, const std::string multicast_ip )
 {
   // Create a UDP socket
-  ROS_INFO( "Creating socket..." );
+  ROS_ERROR( "Creating socket..." );
   m_socket = socket( AF_INET, SOCK_DGRAM, 0 );
   if( m_socket < 0 )
     throw SocketException( strerror( errno ) );
 
   // Allow reuse of local addresses
-  ROS_INFO( "Setting socket options..." );
+  ROS_ERROR( "Setting socket options..." );
+  // char *opt;
+  // opt = "eth0";
+  // setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
   int option_value = 1;
   int result = setsockopt( m_socket, SOL_SOCKET, SO_REUSEADDR, (void*)&option_value, sizeof( int ) );
   if( result == -1 )
@@ -54,18 +57,18 @@ UdpMulticastSocket::UdpMulticastSocket( const int local_port, const std::string 
   error << "unknown error";
   break;
     }
-    throw SocketException( error.str().c_str() );    
+    throw SocketException( error.str().c_str() );
   }
-  
+
   // Fill struct for local address
   memset ( &m_local_addr, 0, sizeof ( m_local_addr ) );
   m_local_addr.sin_family = AF_INET;
-  m_local_addr.sin_addr.s_addr = htonl( INADDR_ANY );
-  m_local_addr.sin_port = htons( local_port );
-  ROS_INFO( "Local address: %s:%i", inet_ntoa( m_local_addr.sin_addr ), ntohs( m_local_addr.sin_port ) );
+  m_local_addr.sin_addr.s_addr =  inet_addr("127.0.0.1");
+  m_local_addr.sin_port = htons(12345);
+  ROS_ERROR( "Local address: %s:%i", inet_ntoa( m_local_addr.sin_addr ), ntohs( m_local_addr.sin_port ) );
 
   // Bind the socket
-  ROS_INFO( "Binding socket to local address..." );
+  ROS_ERROR( "Binding socket to local address..." );
   result = bind( m_socket, (sockaddr*)&m_local_addr, sizeof( m_local_addr ) );
   if( result == -1 )
   {
@@ -73,44 +76,45 @@ UdpMulticastSocket::UdpMulticastSocket( const int local_port, const std::string 
     error << "Failed to bind socket to local address:" << strerror( errno );
     throw SocketException( error.str().c_str() );
   }
-  
-  // Join multicast group
-  struct ip_mreq mreq;
-  mreq.imr_multiaddr.s_addr = inet_addr( multicast_ip.c_str() );
-  mreq.imr_interface = m_local_addr.sin_addr;
-  ROS_INFO( "Joining multicast group %s...", inet_ntoa( mreq.imr_multiaddr ) );
 
-  result = setsockopt(m_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
-  if( result == -1 )
-  {
-    std::stringstream error;
-    error << "Failed to set socket option: ";
-    switch( errno )
-    {
-      case EBADF:
-  error << "EBADF";
-  break;
-      case EFAULT:
-  error << "EFAULT";
-  break;
-      case EINVAL:
-  error << "EINVAL";
-  break;
-      case ENOPROTOOPT:
-  error << "ENOPROTOOPT";
-  break;
-      case ENOTSOCK:
-  error << "ENOTSOCK";
-  break;
-      default:
-  error << "unknown error";
-  break;
-    }
-    throw SocketException( error.str().c_str() );    
-  }
-    
+  // // Join multicast group
+  // struct ip_mreq mreq;
+  // mreq.imr_multiaddr.s_addr = inet_addr( multicast_ip.c_str() );
+  // mreq.imr_interface = m_local_addr.sin_addr;
+  // ROS_ERROR( "Joining multicast group %s...", inet_ntoa( mreq.imr_multiaddr ) );
+  //
+  // result = setsockopt(m_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
+  // if( result == -1 )
+  // {
+  //   ROS_ERROR("error");
+  //   std::stringstream error;
+  //   error << "Failed to set socket option: ";
+  //   switch( errno )
+  //   {
+  //     case EBADF:
+  // error << "EBADF";
+  // break;
+  //     case EFAULT:
+  // error << "EFAULT";
+  // break;
+  //     case EINVAL:
+  // error << "EINVAL";
+  // break;
+  //     case ENOPROTOOPT:
+  // error << "ENOPROTOOPT";
+  // break;
+  //     case ENOTSOCK:
+  // error << "ENOTSOCK";
+  // break;
+  //     default:
+  // error << "unknown error";
+  // break;
+  //   }
+  //   throw SocketException( error.str().c_str() );
+  // }
+
   // Make socket non-blocking
-  ROS_INFO( "Enabling non-blocking I/O" );
+  ROS_ERROR( "Enabling non-blocking I/O" );
   int flags = fcntl( m_socket, F_GETFL , 0 );
   result = fcntl(m_socket, F_SETFL, flags | O_NONBLOCK);
   if( result == -1 )
@@ -143,7 +147,7 @@ int UdpMulticastSocket::recv()
   if( status > 0 )
     ROS_DEBUG( "%4i bytes received from %s:%i", status, inet_ntoa( remote_addr.sin_addr ), ntohs( remote_addr.sin_port ) );
   else if( status == 0 )
-    ROS_INFO( "Connection closed by peer" );
+    ROS_ERROR( "Connection closed by peer" );
 
   return status;
 }

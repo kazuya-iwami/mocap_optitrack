@@ -41,12 +41,14 @@ void processMocapData( const char** mocap_model,
                        RigidBodyMap& published_rigid_bodies,
                        const std::string& multicast_ip)
 {
+  ROS_DEBUG("start processMocapData func");
   UdpMulticastSocket multicast_client_socket( LOCAL_PORT, multicast_ip );
 
   ushort payload;
   int numberOfPackets = 0;
   while(ros::ok())
   {
+
     bool packetread = false;
     int numBytes = 0;
 
@@ -58,6 +60,7 @@ void processMocapData( const char** mocap_model,
       // Parse mocap data
       if( numBytes > 0 )
       {
+        ROS_DEBUG("numBytes > 0 ");
         const char* buffer = multicast_client_socket.getBuffer();
         unsigned short header = *((unsigned short*)(&buffer[0]));
 
@@ -101,13 +104,15 @@ void processMocapData( const char** mocap_model,
 ////////////////////////////////////////////////////////////////////////
 
 int main( int argc, char* argv[] )
-{ 
-  
+{
+
   // Initialize ROS node
   ros::init(argc, argv, "mocap_node");
   ros::NodeHandle n("~");
 
-  // Get configuration from ROS parameter server  
+  ROS_DEBUG( "start main func" );
+
+  // Get configuration from ROS parameter server
   const char** mocap_model( DEFAULT_MOCAP_MODEL );
   if( n.hasParam( MOCAP_MODEL_KEY ) )
   {    std::string tmp;
@@ -150,7 +155,7 @@ int main( int argc, char* argv[] )
                   std::pair<RigidBodyMap::iterator, bool> result = published_rigid_bodies.insert(item);
                   if (!result.second)
                   {
-                      ROS_ERROR("Could not insert configuration for rigid body ID %s", id.c_str());
+                      ROS_DEBUG("Could not insert configuration for rigid body ID %s", id.c_str());
                   }
               }
           }
